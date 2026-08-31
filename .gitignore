@@ -1,0 +1,14 @@
+.env
+
+# backend
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.ruff_cache/
+backend/alembic/**/__pycache__/
+backend/tests/__pycache__/
+*.pyc
+
+# frontend
+frontend/node_modules/
+frontend/dist/

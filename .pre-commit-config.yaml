@@ -1,0 +1,19 @@
+# Optional: Run this before committing to catch issues early
+# Install with: pip install pre-commit && pre-commit install
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.5
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  - repo: https://github.com/oxc-project/mirrors-oxlint
+    rev: v1.60.0
+    hooks:
+      - id: oxlint
+        verbose: true
+        types: [javascript, ts, jsx, tsx]

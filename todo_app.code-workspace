@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{ "name": "backend", "path": "backend" },
+		{ "name": "frontend", "path": "frontend" },
+		{ "name": "root", "path": "." }
+	],
+	"extensions": {
+		"recommendations": [
+			"ms-python.python",
+			"charliermarsh.ruff",
+			"oxc.oxc-vscode"
+		]
+	}
+}
+
