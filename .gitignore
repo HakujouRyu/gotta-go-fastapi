@@ -9,6 +9,9 @@ backend/alembic/**/__pycache__/
 backend/tests/__pycache__/
 *.pyc
 
+# SQLite data (DB_ENGINE=sqlite) - local, persisted, not tracked
+backend/data/
+
 # frontend
 frontend/node_modules/
 frontend/dist/

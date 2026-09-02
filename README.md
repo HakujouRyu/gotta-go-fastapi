@@ -37,9 +37,9 @@ So yeah,
 ## Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose
-- `uv` (Python package manager) — [install](https://docs.astral.sh/uv/getting-started/installation/)
-- `bun` (JavaScript runtime) — [install](https://bun.sh/get)
+- Docker & Docker Compose (only needed for the Postgres setup - skip it if you leave the default `DB_ENGINE=sqlite`, see [Database](#database))
+- `uv` (Python package manager) - [install](https://docs.astral.sh/uv/getting-started/installation/)
+- `bun` (JavaScript runtime) - [install](https://bun.sh/get)
 
 ### Install Dependencies
 
@@ -73,13 +73,13 @@ bun install
    ```
 
    This will:
-   - Start Postgres via `docker compose up -d`
+   - Start Postgres via `docker compose up -d` (skipped if `.env` has `DB_ENGINE=sqlite`)
    - Launch FastAPI backend (with auto-reload) on `http://localhost:8000`
    - Launch Vite dev server on `http://localhost:5173`
 
 3. **Stop services**:
    - Press Ctrl+C in the backend/frontend terminal windows
-   - Stop database: `docker compose down` (from the root directory)
+   - Stop database (Postgres mode only): `docker compose down` (from the root directory)
 
 ## Project Structure
 
@@ -117,9 +117,9 @@ frontend/                   # React+TypeScript app (bun + Vite + Tailwind)
 │   │   ├── Card.tsx
 │   │   └── index.ts
 │   ├── pages/              # One file per route (see "Pages & Routing" below)
-│   │   ├── Home.tsx        # /       — links to the other pages
-│   │   ├── Health.tsx      # /health — backend connectivity check
-│   │   └── Items.tsx       # /items  — list (GET) + create (POST) example
+│   │   ├── Home.tsx        # /       - links to the other pages
+│   │   ├── Health.tsx      # /health - backend connectivity check
+│   │   └── Items.tsx       # /items  - list (GET) + create (POST) example
 │   ├── main.tsx
 │   ├── App.tsx             # Router shell: BrowserRouter + Routes
 │   ├── App.test.tsx        # Example test: routing + the POST flow
@@ -143,13 +143,13 @@ todo_app.code-workspace   # VS Code multi-root workspace
 
 ### Backend Organization: `api/` vs `common/`
 
-**`api/`** — Routes and endpoint logic
+**`api/`** - Routes and endpoint logic
 - New API endpoints (GET, POST, PUT, DELETE)
 - Route-specific validation or business logic
 - API error handling and responses
 - Example: `app/api/items.py` contains all Item-related endpoints
 
-**`common/`** — Shared utilities, data, and setup
+**`common/`** - Shared utilities, data, and setup
 - Database models (SQLAlchemy ORM)
 - Pydantic schemas (request/response validation)
 - Database engine, sessions, connection
@@ -204,14 +204,22 @@ uv run alembic upgrade head
 ### Environment Variables
 Create `.env` in the root (copy from `.env.example`):
 ```
-DATABASE_URL=postgresql://todo:todo@localhost:5432/todo
+DB_ENGINE=postgres        # or "sqlite"
+
+# used when DB_ENGINE=postgres
 POSTGRES_USER=todo
 POSTGRES_PASSWORD=todo
 POSTGRES_DB=todo
+POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
+
+# used when DB_ENGINE=sqlite
+SQLITE_PATH=data/app.db
 ```
 
 For production, use strong passwords and a managed database service (e.g., AWS RDS, Supabase).
+
+An explicit `DATABASE_URL` env var always overrides `DB_ENGINE` (this is how tests and CI pin their own database without touching `.env` - see [Testing](#testing)).
 
 ## Backend Development
 
@@ -236,7 +244,9 @@ uv sync                      # Install all dependencies
    ```
 
    `app/common/__init__.py` imports `models` so every model gets registered on
-   `Base.metadata` from one place — this is what both `Base.metadata.create_all()`
+   `Base.metadata` from one place. 
+   
+   This is what both `Base.metadata.create_all()`
    (used by tests) and `alembic revision --autogenerate` (used by migrations) rely
    on to see your tables. If you rename `models.py` or split it into multiple
    files, update that import.
@@ -316,15 +326,15 @@ uv run pytest -v
 ```
 
 **Test Database:** By default, tests run against an in-memory SQLite database, so
-`uv run pytest` works with zero setup — no Docker, no `.env`. Each test function
+`uv run pytest` works with zero setup; no Docker, no `.env`. Each test function
 automatically:
 - Drops and recreates all tables
 - Yields a fresh database session
 - Cleans up after itself
 
 Set `DATABASE_URL` yourself (e.g. to the docker-compose Postgres, or export the
-same value CI uses) to run the suite against real Postgres instead — worth doing
-before relying on any Postgres-specific behavior (types, functions, constraints)
+same value CI uses) to run the suite against real Postgres instead. 
+Probably worth doing before relying on any Postgres-specific behavior (types, functions, constraints)
 that SQLite won't catch. CI always runs against real Postgres.
 
 **Example test (api):**
@@ -386,8 +396,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 FastAPI automatically generates interactive API documentation:
 
-- **Swagger UI** — `http://localhost:8000/docs`
-- **ReDoc** — `http://localhost:8000/redoc`
+- **Swagger UI** - `http://localhost:8000/docs`
+- **ReDoc** - `http://localhost:8000/redoc`
 
 Both are interactive: test endpoints, see request/response schemas, and explore all routes. Docs are generated from route docstrings and type hints.
 
@@ -412,7 +422,7 @@ GET  /items/{id}      # Get single item
 
 ### Pages & Routing
 
-`App.tsx` is just a router shell — [React Router](https://reactrouter.com/) mapping
+`App.tsx` is just a router shell - [React Router](https://reactrouter.com/) mapping
 paths to page components:
 
 ```tsx
@@ -428,10 +438,10 @@ paths to page components:
 Each route's page lives in `src/pages/`, one file per route. The three shipped pages
 are deliberately tiny, and each demonstrates one thing so you can delete whichever
 you don't need without untangling it from the others:
-- **`Home.tsx`** — nothing but two `<Link>`s. Proves page separation / routing works.
-- **`Health.tsx`** — pings the backend's `GET /health` and shows whether it's
+- **`Home.tsx`** - nothing but two `<Link>`s. Proves page separation / routing works.
+- **`Health.tsx`** - pings the backend's `GET /health` and shows whether it's
   reachable. Proves the two halves of the stack are wired together (CORS, `fetch`).
-- **`Items.tsx`** — lists items (`GET /items`) and a form to add one
+- **`Items.tsx`** - lists items (`GET /items`) and a form to add one
   (`POST /items`). Proves a full request/response round-trip, including sending a
   JSON body.
 
@@ -515,7 +525,7 @@ Tests use `vitest` (Vite's test runner) and `@testing-library/react`.
 
 **Example test:**
 ```typescript
-// src/App.test.tsx — since App is just the router, tests render it and navigate
+// src/App.test.tsx - since App is just the router, tests render it and navigate
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
@@ -530,7 +540,7 @@ it('navigates from home to the health page', async () => {
 })
 ```
 
-`App` renders its own `BrowserRouter`, which reads real browser history — if a test
+`App` renders its own `BrowserRouter`, which reads real browser history. If a test
 navigates, reset the URL in `beforeEach` (`window.history.pushState({}, '', '/')`) so
 later tests don't inherit it.
 
@@ -541,10 +551,25 @@ bun run lint   # Oxlint checks (configured in .oxlintrc.json)
 
 ## Database
 
-Postgres runs in Docker. Connection details in `.env`.
+Two persistence layers, toggled by `DB_ENGINE` in `.env`:
+
+- **`postgres`** - runs in Docker via `docker compose`. Connection details in `.env` (`POSTGRES_*`).
+- **`sqlite`** (default) - a local file at `backend/<SQLITE_PATH>` (default `backend/data/app.db`). No Docker needed;
+  `start.sh`/`start.ps1` skip `docker compose up` entirely when this is set. The file (and its parent dir)
+  is created automatically on first run, persists between runs, and is gitignored (`backend/data/`) -
+  it's a local dev convenience, not something to commit or share between machines.
+
+Migrations (`alembic upgrade head`, etc.) work the same either way - they read the same computed
+`DATABASE_URL`. Note SQLite has weaker `ALTER TABLE` support than Postgres, so a future
+autogenerated migration that alters an existing column/constraint may need
+[batch mode](https://alembic.sqlalchemy.org/en/latest/batch.html) to apply cleanly on SQLite.
+
+Switching `DB_ENGINE` doesn't migrate data between backends - each keeps its own separate
+database/file, so switching starts you on an empty schema until you run migrations again.
 
 ### Useful Commands
 ```bash
+# --- Postgres ---
 # View logs
 docker compose logs db
 
@@ -553,6 +578,13 @@ psql postgresql://todo:todo@localhost:5432/todo
 
 # Reset database (destroy all data)
 docker compose down -v
+
+# --- SQLite ---
+# Inspect the file directly
+sqlite3 backend/data/app.db
+
+# Reset database (destroy all data)
+rm backend/data/app.db
 ```
 
 ## Testing & CI/CD
@@ -618,7 +650,7 @@ git commit --no-verify
 This template aims provides a solid foundation to build your stuff on, but deliberately omits features you'll want to add based on your specific needs:
 
 - **Authentication & Authorization**
-- **Environment-specific config** — Separate settings for dev, staging, production
+- **Environment-specific config** - Separate settings for dev, staging, production
 - **Deployment containers** 
 - **Secrets management** 
 - **Feature flags**
